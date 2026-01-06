@@ -45,7 +45,7 @@ jobs:
           # 기존 실행 중인 서버 종료
           fuser -k 8080/tcp || true
           # 새 서버 실행 (환경 변수 주입)
-          nohup java -jar /home/ubuntu/dugout/tars/*.jar \
+          nohup /usr/bin/java -jar /home/ubuntu/dugout/tars/*.jar \
             --spring.datasource.url=${{ secrets.DB_URL }} \
             --spring.datasource.username=${{ secrets.DB_USERNAME }} \
             --spring.datasource.password=${{ secrets.DB_PASSWORD }} > /home/ubuntu/dugout/app.log 2>&1 &
