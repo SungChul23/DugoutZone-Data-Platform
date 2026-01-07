@@ -1,6 +1,7 @@
 package com.dev.dugout.domain.user.service;
 
 import com.dev.dugout.domain.user.dto.LoginRequestDto;
+import com.dev.dugout.domain.user.dto.LoginResponseDto;
 import com.dev.dugout.domain.user.entity.User;
 import com.dev.dugout.domain.user.repository.UserRepository;
 import com.dev.dugout.domain.user.dto.SignupRequestDto;
@@ -15,6 +16,7 @@ public class MemberService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+
 
     @Transactional
     public void signup(SignupRequestDto requestDto) {
@@ -40,29 +42,16 @@ public class MemberService {
     }
 
     //로그인 로직
-    @Transactional(readOnly = true)
-    public boolean login(LoginRequestDto loginDto) {
-        // 1. DB에서 이메일(loginId)로 사용자 조회
-        User user = userRepository.findByLoginId(loginDto.getEmail())
-                .orElse(null);
 
-        if (user == null) {
-            return false; // 사용자가 없으면 로그인 실패
-        }
-
-        // 2. 암호화된 비밀번호와 입력된 평문 비밀번호 비교
-        // matches(평문, 암호화된 비밀번호) 순서가 중요합니다.
-        return passwordEncoder.matches(loginDto.getPassword(), user.getPassword());
-    }
-
-    public String getNicknameIfValid(LoginRequestDto loginDto) {
+    public LoginResponseDto getLoginUserInfo(LoginRequestDto loginDto) {
+        // 1. 이메일로 유저 조회
         User user = userRepository.findByLoginId(loginDto.getEmail()).orElse(null);
 
-        // passwordEncoder.matches()로 암호 비교 (지난번 직접 생성한 객체 사용)
+        // 2. 유저가 존재하고 비밀번호가 일치하는지 확인
         if (user != null && passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
-            return user.getNickname();
+            // 3. 닉네임과 선호 팀을 DTO에 담아서 반환
+            return new LoginResponseDto(user.getNickname(), user.getFavoriteTeam());
         }
-        return null;
+        return null; // 로그인 실패 시
     }
-
 }

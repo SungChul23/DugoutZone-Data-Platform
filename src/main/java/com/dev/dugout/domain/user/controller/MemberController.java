@@ -28,15 +28,18 @@ public class MemberController {
         return ResponseEntity.ok(memberService.isNicknameAvailable(nickname));
     }
 
+// MemberController.java
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDto loginDto) {
-        // Service에서 로그인 검증 후 닉네임을 가져오거나 null 반환
-        String nickname = memberService.getNicknameIfValid(loginDto);
+        // 이제 서비스에서 DTO를 직접 받아옵니다.
+        LoginResponseDto responseDto = memberService.getLoginUserInfo(loginDto);
 
-        if (nickname != null) {
-            return ResponseEntity.ok(new LoginResponseDto(nickname));
+        if (responseDto != null) {
+            // 성공 시 닉네임과 팀 정보가 담긴 객체 반환
+            return ResponseEntity.ok(responseDto);
         } else {
-            return ResponseEntity.status(401).body("로그인 실패");
+            return ResponseEntity.status(401).body("로그인 실패: 아이디 또는 비밀번호를 확인하세요.");
         }
     }
 }
