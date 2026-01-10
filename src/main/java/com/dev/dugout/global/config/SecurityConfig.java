@@ -50,7 +50,7 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "https://*.idx.google.com",
                 "https://*.google.com",
-                "https://*.usercontent.goog",
+                "https://**.usercontent.goog",
                 "https://dugout.cloud"
         ));
 
