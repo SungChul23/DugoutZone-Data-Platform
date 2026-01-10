@@ -58,15 +58,16 @@ public class RecommendationService {
         // 추천하는 더 안전한 SQL 작성 방식
         String sql = String.format(
                 "SELECT h.year, h.\"팀명\", (" +
-                        "(CAST(h.hr AS DOUBLE) / 234.0 * %.2f) + " + // 괄호를 줄여서 연산 순서를 명확히
-                        "(CAST(h.avg AS DOUBLE) / 0.300 * %.2f) + " +
-                        "((5.0 - CAST(p.era AS DOUBLE)) / 5.0 * %.2f) + " +
-                        "((CAST(p.sv AS DOUBLE) + CAST(p.hld AS DOUBLE)) / 140.0 * %.2f) + " +
-                        "(CAST(h.ops AS DOUBLE) / 1.0 * %.2f) + " +
-                        "(CAST(p.wpct AS DOUBLE) / 1.0 * %.2f)" +
+                        "(CAST(h.hr AS DOUBLE) / 234.0 * %.4f) + " +
+                        "(CAST(h.avg AS DOUBLE) / 0.300 * %.4f) + " +
+                        "((5.0 - CAST(p.era AS DOUBLE)) / 5.0 * %.4f) + " +
+                        "((CAST(p.sv AS DOUBLE) + CAST(p.hld AS DOUBLE)) / 140.0 * %.4f) + " +
+                        "(CAST(h.ops AS DOUBLE) / 1.0 * %.4f) + " +
+                        "(CAST(p.wpct AS DOUBLE) / 1.0 * %.4f)" +
                         ") AS total_score " +
                         "FROM type_hitter h JOIN type_pitcher p ON h.year = p.year AND h.team_id = p.team_id " +
-                        "WHERE h.year >= '%d' ORDER BY total_score DESC LIMIT 1",
+                        "WHERE h.year >= '%d' " +
+                        "ORDER BY total_score DESC LIMIT 1",
                 w1, w2, w3, w4, w5, w6, request.getStartYear()
         );
 
