@@ -22,6 +22,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // 로컬 테스트용
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/members/**").permitAll()
+                        .requestMatchers("/api/v1/fanexperience/**").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();
