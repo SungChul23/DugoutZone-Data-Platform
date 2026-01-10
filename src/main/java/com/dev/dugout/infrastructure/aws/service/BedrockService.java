@@ -50,7 +50,7 @@ public class BedrockService {
 
         try {
             InvokeModelRequest request = InvokeModelRequest.builder()
-                    .modelId("anthropic.claude-3-haiku-20240307")
+                    .modelId("anthropic.claude-3-haiku-20240307-v1:0")
                     .contentType("application/json")
                     .body(SdkBytes.fromUtf8String(payload.toString()))
                     .build();
