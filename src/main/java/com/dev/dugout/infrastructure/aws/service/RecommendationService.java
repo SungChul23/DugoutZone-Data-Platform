@@ -23,19 +23,24 @@ public class RecommendationService {
 
     private final AthenaClient athenaClient;
 
-    @Value("${aws.athena.database}") private String database;
-    @Value("${aws.athena.output-location}") private String outputLocation;
+    @Value("${aws.athena.database}")
+    private String database;
+    @Value("${aws.athena.output-location}")
+    private String outputLocation;
 
     private static final Map<String, String> FULL_TEAM_NAMES = Map.ofEntries(
-            Map.entry("삼성", "삼성 라이온즈"), Map.entry("두산", "두산 베어스"),
-            Map.entry("LG", "LG 트윈스"), Map.entry("롯데", "롯데 자이언츠"),
-            Map.entry("KIA", "KIA 타이거즈"), Map.entry("한화", "한화 이글스"),
-            Map.entry("SSG", "SSG 랜더스"), Map.entry("키움", "키움 히어로즈"),
-            Map.entry("NC", "NC 다이노스"), Map.entry("KT", "kt wiz"),
-            Map.entry("현대", "현대 유니콘스"), Map.entry("SK", "SK 와이번스"),
-            Map.entry("넥센", "넥센 히어로즈")
+            Map.entry("1", "삼성 라이온즈"),
+            Map.entry("2", "두산 베어스"),
+            Map.entry("3", "LG 트윈스"),
+            Map.entry("4", "롯데 자이언츠"),
+            Map.entry("5", "KIA 타이거즈"),
+            Map.entry("6", "한화 이글스"),
+            Map.entry("7", "SSG 랜더스"),
+            Map.entry("8", "키움 히어로즈"),
+            Map.entry("9", "NC 다이노스"),
+            Map.entry("10", "kt wiz"),
+            Map.entry("11", "현대 유니콘스")
     );
-
 
 
     public TeamRecommendationResponse getMatchTeam(SurveyRequest request) {
@@ -50,14 +55,15 @@ public class RecommendationService {
         double w5 = prefs.getOrDefault("q5", 3) / 5.0;
         double w6 = prefs.getOrDefault("q6", 3) / 5.0;
 
+        // 추천하는 더 안전한 SQL 작성 방식
         String sql = String.format(
                 "SELECT h.year, h.\"팀명\", (" +
-                        "((CAST(h.hr AS DOUBLE) / 234.0) * %.2f) + " +
-                        "((CAST(h.avg AS DOUBLE) / 0.300) * %.2f) + " +
-                        "(((5.0 - CAST(p.era AS DOUBLE)) / 5.0) * %.2f) + " +
-                        "((CAST(p.sv + p.hld AS DOUBLE) / 140.0) * %.2f) + " +
-                        "((CAST(h.ops AS DOUBLE) / 1.0) * %.2f) + " +
-                        "((CAST(p.wpct AS DOUBLE) / 1.0) * %.2f)" +
+                        "(CAST(h.hr AS DOUBLE) / 234.0 * %.2f) + " + // 괄호를 줄여서 연산 순서를 명확히
+                        "(CAST(h.avg AS DOUBLE) / 0.300 * %.2f) + " +
+                        "((5.0 - CAST(p.era AS DOUBLE)) / 5.0 * %.2f) + " +
+                        "((CAST(p.sv AS DOUBLE) + CAST(p.hld AS DOUBLE)) / 140.0 * %.2f) + " +
+                        "(CAST(h.ops AS DOUBLE) / 1.0 * %.2f) + " +
+                        "(CAST(p.wpct AS DOUBLE) / 1.0 * %.2f)" +
                         ") AS total_score " +
                         "FROM type_hitter h JOIN type_pitcher p ON h.year = p.year AND h.team_id = p.team_id " +
                         "WHERE h.year >= '%d' ORDER BY total_score DESC LIMIT 1",
