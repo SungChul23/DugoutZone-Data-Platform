@@ -14,11 +14,11 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Slf4j // 로깅을 위한 어노테이션
 public class RecommendationService {
 
     private final AthenaClient athenaClient;
-    private final BedrockService bedrockService; // [추가] AI 서비스 주입
+    private final BedrockService bedrockService;
 
     @Value("${aws.athena.database}")
     private String database;
@@ -35,18 +35,18 @@ public class RecommendationService {
     );
 
     public TeamRecommendationResponse getMatchTeam(SurveyRequest request) {
-        log.info("==> KBO 추천 분석 시작 (연도: {}, 가중치 계산 중)", request.getStartYear());
+        // [LOG] 분석 시작 및 수신 데이터 확인
+        log.info(">>>> [ANALYSIS START] KBO 팀 추천 엔진 가동 (기준 연도: {} 이후)", request.getStartYear());
+        log.info(">>>> [USER PREFERENCE] {}", request.getPreferenceSummary());
 
-        // 1. 가중치 계산 (0.0 ~ 1.0)
         Map<String, Integer> prefs = request.getPreferences();
-        double w1 = prefs.getOrDefault("q1", 3) / 5.0; // 홈런
-        double w2 = prefs.getOrDefault("q2", 3) / 5.0; // 타율
-        double w3 = prefs.getOrDefault("q3", 3) / 5.0; // 방어율
-        double w4 = prefs.getOrDefault("q4", 3) / 5.0; // 세이브/홀드
-        double w5 = prefs.getOrDefault("q5", 3) / 5.0; // OPS
-        double w6 = prefs.getOrDefault("q6", 3) / 5.0; // 승률
+        double w1 = prefs.getOrDefault("q1", 3) / 5.0;
+        double w2 = prefs.getOrDefault("q2", 3) / 5.0;
+        double w3 = prefs.getOrDefault("q3", 3) / 5.0;
+        double w4 = prefs.getOrDefault("q4", 3) / 5.0;
+        double w5 = prefs.getOrDefault("q5", 3) / 5.0;
+        double w6 = prefs.getOrDefault("q6", 3) / 5.0;
 
-        // 2. 아테나 SQL 작성 (AI에게 넘겨줄 원본 지표 hr, avg, era, ops 포함)
         String sql = String.format(
                 "SELECT h.year, h.\"팀명\", " +
                         "CAST(h.hr AS DOUBLE), CAST(h.avg AS DOUBLE), CAST(p.era AS DOUBLE), CAST(h.ops AS DOUBLE), " +
@@ -62,7 +62,9 @@ public class RecommendationService {
                 w1, w2, w3, w4, w5, w6, request.getStartYear()
         );
 
-        // 3. 쿼리 실행 및 결과 처리 (Bedrock 호출 포함) + getPreferenceSummary 통해 자세한 정보를 베드락에게 전달
+        // [LOG] 생성된 SQL 확인 (디버깅 시 가장 중요함)
+        log.debug(">>>> [SQL GENERATED] {}", sql);
+
         return executeAthenaQuery(sql, request.getPreferenceSummary());
     }
 
@@ -74,6 +76,10 @@ public class RecommendationService {
                 .build();
 
         String executionId = athenaClient.startQueryExecution(startRequest).queryExecutionId();
+
+        // [LOG] 쿼리 실행 ID 기록
+        log.info(">>>> [ATHENA SUBMITTED] Query ID: {}", executionId);
+
         waitForQuery(executionId);
 
         GetQueryResultsResponse results = athenaClient.getQueryResults(
@@ -84,7 +90,6 @@ public class RecommendationService {
         if (rows.size() > 1) {
             List<Datum> data = rows.get(1).data();
 
-            // 데이터 매핑 (SQL SELECT 순서와 일치해야 함)
             String year = data.get(0).varCharValue();
             String dbTeamName = data.get(1).varCharValue();
             String hr = data.get(2).varCharValue();
@@ -94,29 +99,51 @@ public class RecommendationService {
             double totalScore = Double.parseDouble(data.get(6).varCharValue());
 
             String fullTeamName = FULL_TEAM_NAMES.getOrDefault(dbTeamName, dbTeamName + " 구단");
-            String statsSummary = String.format("홈런 %s개, 타율 %s, 평균자책점 %s, OPS %s", hr, avg, era, ops);
+            String statsSummary = String.format("홈런 %s개, 타율 %s, ERA %s, OPS %s", hr, avg, era, ops);
 
-            // [핵심] Bedrock AI에게 해설 요청
+            // [LOG] 아테나 결과 확인
+            log.info(">>>> [ATHENA RESULT] 매칭 성공! -> {}년 {} (Score: {})", year, fullTeamName, totalScore);
+
+            // [LOG] Bedrock 호출 시작
+            log.info(">>>> [BEDROCK REQUEST] AI 추천 사유 생성 시작...");
             String aiReason = bedrockService.generateReason(fullTeamName, year, statsSummary, userPref);
+            log.info(">>>> [BEDROCK RESPONSE] 생성 완료");
 
             return TeamRecommendationResponse.builder()
                     .year(year)
                     .originalName(dbTeamName)
                     .teamName(fullTeamName)
                     .score(totalScore)
-                    .reason(aiReason) // AI가 쓴 문장이 담깁니다.
+                    .reason(aiReason)
                     .build();
         }
+
+        log.warn(">>>> [NO DATA] 조건에 맞는 팀을 찾을 수 없습니다.");
         throw new RuntimeException("추천 팀 데이터가 없습니다.");
     }
 
     private void waitForQuery(String id) {
+        int attempts = 0;
         while (true) {
             GetQueryExecutionResponse res = athenaClient.getQueryExecution(GetQueryExecutionRequest.builder().queryExecutionId(id).build());
             String state = res.queryExecution().status().state().toString();
-            if (state.equals("SUCCEEDED")) return;
-            if (state.equals("FAILED") || state.equals("CANCELLED")) throw new RuntimeException("Athena 실패: " + id);
-            try { Thread.sleep(500); } catch (Exception ignored) {}
+
+            if (state.equals("SUCCEEDED")) {
+                log.info(">>>> [ATHENA SUCCESS] 쿼리 완료 ({}회 폴링)", attempts);
+                return;
+            }
+            if (state.equals("FAILED") || state.equals("CANCELLED")) {
+                String reason = res.queryExecution().status().stateChangeReason();
+                log.error(">>>> [ATHENA ERROR] 쿼리 실패 (ID: {}), 사유: {}", id, reason);
+                throw new RuntimeException("Athena 실패: " + reason);
+            }
+
+            try {
+                attempts++;
+                Thread.sleep(500);
+            } catch (Exception ignored) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }
