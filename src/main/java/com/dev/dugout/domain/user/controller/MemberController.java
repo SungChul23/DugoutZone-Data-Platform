@@ -17,9 +17,9 @@ public class MemberController {
 
     // 회원가입
     @PostMapping("/signup")
-    public ResponseEntity<String> signup(@RequestBody SignupRequestDto requestDto) {
-        memberService.signup(requestDto);
-        return ResponseEntity.ok("회원가입이 완료되었습니다.");
+    public ResponseEntity<LoginResponseDto> signup(@RequestBody SignupRequestDto requestDto) {
+        LoginResponseDto responseDto = memberService.signup(requestDto);
+        return ResponseEntity.ok(responseDto);
     }
 
     // 닉네임 중복 확인
@@ -28,15 +28,14 @@ public class MemberController {
         return ResponseEntity.ok(memberService.isNicknameAvailable(nickname));
     }
 
-// MemberController.java
 
+    //서비스에서 토큰 2개(Access/Refresh)가 포함된 DTO를 응답받음
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDto loginDto) {
-        // 이제 서비스에서 DTO를 직접 받아옵니다.
         LoginResponseDto responseDto = memberService.getLoginUserInfo(loginDto);
 
         if (responseDto != null) {
-            // 성공 시 닉네임과 팀 정보가 담긴 객체 반환
+            // 성공 시 토큰 2개, 닉네임, 팀 정보를 모두 포함하여 반환
             return ResponseEntity.ok(responseDto);
         } else {
             return ResponseEntity.status(401).body("로그인 실패: 아이디 또는 비밀번호를 확인하세요.");
