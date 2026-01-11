@@ -38,7 +38,7 @@ public class GameService {
                 .time(game.getGameTime().toString().substring(0, 5)) // HH:mm:ss -> HH:mm
                 .home(game.getHomeTeam().getName()) // 구단 풀네임
                 .away(game.getAwayTeam().getName()) // 구단 풀네임
-                .stadium(game.getStadiumName())
+                .stadium(game.getHomeTeam().getStadiumName()) // 홈팀의 구장을 가져오자(UX 향상 목적)
                 .status(game.getStatus() != null ? game.getStatus() : "SCHEDULED")
                 .build();
     }
