@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/members/**").permitAll()
                         .requestMatchers("/api/v1/fanexperience/**").permitAll()
                         .requestMatchers("/api/v1/news/**").permitAll()
+                        .requestMatchers("/api/v1/schedule/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
@@ -50,13 +51,13 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "https://*.idx.google.com",
                 "https://*.google.com",
-                "https://**.usercontent.goog",
+                "https://*.usercontent.goog",
                 "https://dugout.cloud"
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(true); //프론트 fetch OR axios에서 반드시 사용
         configuration.setMaxAge(3600L); // 브라우저가 CORS 결과를 1시간 동안 캐싱하도록 설정
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
