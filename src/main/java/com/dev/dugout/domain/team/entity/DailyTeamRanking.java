@@ -25,7 +25,7 @@ public class DailyTeamRanking {
     private Team team;
 
     // --- 팀 순위 컬럼들을 반영한 필드 ---
-    @Column(name = "team_rank") // 예약어 피하기
+    @Column(name = "team_rank")
     private Integer rank;          // 순위
 
     private Integer totalGames;    // 경기수

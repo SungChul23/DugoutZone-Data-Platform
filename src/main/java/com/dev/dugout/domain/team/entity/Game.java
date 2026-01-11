@@ -18,19 +18,21 @@ public class Game {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private LocalDate gameDate;
-    private LocalTime gameTime;
+    private LocalDate gameDate; //경기 날짜
+    private LocalTime gameTime; //경기 시간
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "home_team_id")
-    private Team homeTeam;
+    private Team homeTeam; //홈팀 팀 id
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "away_team_id")
-    private Team awayTeam;
+    private Team awayTeam; //원정 팀 id
+    private String stadiumName; //실제로 열린 장소
 
+    //추후 값 업데이터
     private Integer homeScore;
     private Integer awayScore;
     private String status;
-    private String stadiumName;
+
 }
