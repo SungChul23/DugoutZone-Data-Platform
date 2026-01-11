@@ -7,7 +7,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -19,6 +20,8 @@ public class Game {
     private Long id;
 
     private LocalDate gameDate; //경기 날짜
+
+    @Column(columnDefinition = "TIME(0)") // 소수점 정밀도를 0으로 설정
     private LocalTime gameTime; //경기 시간
 
     @ManyToOne(fetch = FetchType.LAZY)
