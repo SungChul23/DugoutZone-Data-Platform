@@ -12,6 +12,7 @@ import java.time.LocalDate;
 @IdClass(TeamRankingId.class) //복합키 생성
 
 //추후 월요일마다 각 팀의 상성 분석 후 최신화된 팀 예측 인사이트 제공
+//특정 시점의 상태를 저장하는 스냅샷(Snapshot) 데이터
 public class DailyTeamRanking {
     @Id
     private LocalDate rankingDate;

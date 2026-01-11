@@ -9,7 +9,7 @@ import java.time.LocalDate;
 //DailyTeamRanking 엔티티의 복합키를 정의하는 클래스
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode // 필수: JPA가 식별자를 비교할 때 사용합니다.
+@EqualsAndHashCode //JPA가 식별자를 비교할 때 사용
 public class TeamRankingId implements Serializable {
 
     private LocalDate rankingDate;

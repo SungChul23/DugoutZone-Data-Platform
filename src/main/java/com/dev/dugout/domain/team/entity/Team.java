@@ -14,6 +14,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 //팀 정보(id,팀 이름, 지역, 경기장)
+//가장 기본이 되는 Master Data)
 public class Team {
 
     @Id

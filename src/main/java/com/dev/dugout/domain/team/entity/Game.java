@@ -12,6 +12,7 @@ import java.time.LocalTime;
 @AllArgsConstructor
 @Builder
 //경기 일정
+//실제 야구 경기라는 이벤트(Event)를 기록하는 데이터
 public class Game {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

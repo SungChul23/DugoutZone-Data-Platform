@@ -11,6 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 //경기 라인업
+//경기의 세부 정보인 로그(Log) 수준의 데이터
 public class GameLineup {
 
     @Id
