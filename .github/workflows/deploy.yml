@@ -62,4 +62,5 @@ jobs:
             --aws.athena.database=${{ secrets.AWS_ATHENA_DATABASE }} \
             --aws.athena.output-location=${{ secrets.AWS_ATHENA_OUTPUT_LOCATION }} \
             --naver.api.client-id=${{ secrets.NAVER_CLIENT_ID }} \
-            --naver.api.client-secret=${{ secrets.NAVER_CLIENT_SECRET }} > /home/ubuntu/dugout/app.log 2>&1 &
+            --naver.api.client-secret=${{ secrets.NAVER_CLIENT_SECRET }} \
+            --jwt.secret=${{ secrets.JWT_SECRET_KEY }} > /home/ubuntu/dugout/app.log 2>&1 &
