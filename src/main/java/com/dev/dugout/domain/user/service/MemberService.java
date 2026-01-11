@@ -1,10 +1,10 @@
 package com.dev.dugout.domain.user.service;
 
-import com.dev.dugout.domain.user.dto.LoginRequestDto;
-import com.dev.dugout.domain.user.dto.LoginResponseDto;
-import com.dev.dugout.domain.user.dto.SignupRequestDto;
+import com.dev.dugout.domain.user.dto.*;
+import com.dev.dugout.domain.user.entity.ForbiddenWord;
 import com.dev.dugout.domain.user.entity.RefreshToken;
 import com.dev.dugout.domain.user.entity.User;
+import com.dev.dugout.domain.user.repository.ForbiddenWordRepository;
 import com.dev.dugout.domain.user.repository.RefreshTokenRepository;
 import com.dev.dugout.domain.user.repository.UserRepository;
 import com.dev.dugout.global.jwt.JwtTokenProvider;
@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,8 +24,11 @@ public class MemberService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final ForbiddenWordRepository forbiddenWordRepository;
 
-    // 1. 회원가입: 반환 타입을 LoginResponseDto로 변경 (자동 로그인용)
+    // 금칙어 리스트 (실무에서는 DB나 Redis에서 관리하지만, 현재는 상수로 정의)
+    private static final List<String> FORBIDDEN_WORDS = Arrays.asList("운영자", "admin", "더그아웃", "관리자", "욕설1", "비속어2");
+
     @Transactional
     public LoginResponseDto signup(SignupRequestDto requestDto) {
         String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
@@ -35,39 +41,52 @@ public class MemberService {
                 .build();
 
         userRepository.save(user);
-
-        // 가입 성공 후 바로 토큰 발급 로직 호출
         return issueTokens(user);
     }
 
     @Transactional(readOnly = true)
-    public boolean isNicknameAvailable(String nickname) {
-        return !userRepository.existsByNickname(nickname);
+    public NicknameCheckResponseDto checkNicknameAvailability(String nickname) {
+        // 1. 길이 검사 (2자 미만 또는 10자 초과)
+        if (nickname == null || nickname.trim().length() < 2 || nickname.trim().length() > 10) {
+            return new NicknameCheckResponseDto(false, "닉네임은 2자 이상 10자 이하로 입력해주세요.");
+        }
+
+        // 2. 금칙어/욕설 필터링 (DB에서 조회)
+        // 데이터 엔지니어 팁: 금칙어가 많아지면 findAll() 결과를 캐싱 가능
+        List<ForbiddenWord> forbiddenWords = forbiddenWordRepository.findAll();
+        for (ForbiddenWord fw : forbiddenWords) {
+            if (nickname.contains(fw.getWord())) {
+                return new NicknameCheckResponseDto(false, "사용할 수 없는 단어가 포함되어 있습니다: " + fw.getWord());
+            }
+        }
+        // 3. 중복 확인
+        boolean exists = userRepository.existsByNickname(nickname);
+        if (exists) {
+            return new NicknameCheckResponseDto(false, "이미 사용 중인 닉네임입니다.");
+        }
+
+        // 모든 통과 시
+        return new NicknameCheckResponseDto(true, "사용 가능한 닉네임입니다.");
     }
 
-    // 2. 로그인 로직: 직접 DTO를 만들지 않고 issueTokens 활용
     @Transactional
     public LoginResponseDto getLoginUserInfo(LoginRequestDto loginDto) {
         User user = userRepository.findByLoginId(loginDto.getEmail()).orElse(null);
 
         if (user != null && passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
-            // 수정됨: 4개의 인자를 받는 DTO를 직접 생성하지 않고 메서드 호출
             return issueTokens(user);
         }
         return null;
     }
 
-    // 3. 토큰 발급 공통 로직 (Refresh Token DB 저장 포함)
     private LoginResponseDto issueTokens(User user) {
         String accessToken = jwtTokenProvider.createAccessToken(user.getLoginId());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getLoginId());
 
-        // 리프레시 토큰 DB 저장/업데이트
         refreshTokenRepository.findByUser(user)
                 .ifPresentOrElse(
                         t -> t.updateToken(refreshToken),
                         () -> {
-                            // 중괄호를 추가하여 반환값 없이 실행만 하도록 명시 (에러 방지)
                             RefreshToken newToken = RefreshToken.builder()
                                     .user(user)
                                     .token(refreshToken)
@@ -76,7 +95,6 @@ public class MemberService {
                         }
                 );
 
-        // 최종적으로 4개의 인자를 담은 DTO 반환
         return new LoginResponseDto(accessToken, refreshToken, user.getNickname(), user.getFavoriteTeam());
     }
 }

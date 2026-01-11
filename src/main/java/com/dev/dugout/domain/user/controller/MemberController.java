@@ -2,6 +2,7 @@ package com.dev.dugout.domain.user.controller;
 
 import com.dev.dugout.domain.user.dto.LoginRequestDto;
 import com.dev.dugout.domain.user.dto.LoginResponseDto;
+import com.dev.dugout.domain.user.dto.NicknameCheckResponseDto;
 import com.dev.dugout.domain.user.dto.SignupRequestDto;
 import com.dev.dugout.domain.user.service.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,8 @@ public class MemberController {
 
     // 닉네임 중복 확인
     @GetMapping("/check-id")
-    public ResponseEntity<Boolean> checkNickname(@RequestParam String nickname) {
-        return ResponseEntity.ok(memberService.isNicknameAvailable(nickname));
+    public ResponseEntity<NicknameCheckResponseDto> checkNickname(@RequestParam String nickname) {
+        return ResponseEntity.ok(memberService.checkNicknameAvailability(nickname));
     }
 
 
