@@ -41,7 +41,6 @@ public class BedrockService {
                         "자, %2$s이 왜 이 사람의 인생 구단이 되어야 하는지 서사를 담아 매력적으로 꼬셔봐!",
                 year, teamName, stats, userPreference
         );
-        // [팁] %1$s, %2$s 처럼 인덱스를 쓰면 뒤에 변수를 4개(year, teamName, stats, userPreference)만 적어도 됩니다!
         JSONObject payload = new JSONObject();
         payload.put("anthropic_version", "bedrock-2023-05-31");
         payload.put("max_tokens", 500);
